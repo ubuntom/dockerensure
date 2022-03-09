@@ -1,0 +1,28 @@
+[tool.poetry]
+name = "dockerensure"
+version = "0.0.1"
+authors = ["ubuntom"]
+description = "Ensure that Docker images are ready for use"
+homepage = "https://github.com/ubuntom/dockerensure"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent"
+]
+license = "MIT"
+readme = "README.md"
+include = [
+    "LICENSE",
+]
+
+[tool.poetry.dependencies]
+# Updated Python version
+python = "^3.8"
+
+[tool.poetry.dev-dependencies]
+# Updated Python version
+pytest = "^7.0"
+
+[build-system]
+requires = ["poetry>=1.1.0"]
+build-backend = "poetry.masonry.api"
