@@ -1,7 +1,7 @@
-import pytest
+from datetime import datetime, timedelta
 from unittest.mock import Mock, patch
 
-from datetime import datetime, timedelta
+import pytest
 
 from dockerensure.utils import IntervalOffset
 

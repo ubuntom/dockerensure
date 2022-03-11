@@ -1,5 +1,5 @@
+import subprocess
 from dataclasses import dataclass, field
-from subprocess import run
 from typing import List, Optional
 
 from .hasher import Hasher
@@ -18,8 +18,9 @@ class BuildConfig:
     dockerfile: The dockerfile to build with
     build_args: Docker build_args
     parents: List of images that this image depends on
-    dependencies: List of files used by this build. All other files will be ignored.
-    excludes: List of files to exclude from this build
+    dependencies: List of files used by this build.
+    excludes: List of files to exclude from this build.
+        If this is None and dependencies exist then all other files will be excluded.
     metadata: Additional metadata to include in the hash
     interval: An interval to refresh the hash after. For example, if you want to force a re-build every day set this interval to one day
     """
@@ -27,16 +28,19 @@ class BuildConfig:
     dockerfile: str
     build_args: dict = field(default_factory=dict)
     parents: List["DockerImage"] = field(default_factory=list)
-    dependencies: Optional[List[str]] = field(default_factory=list)
-    excludes: Optional[List[str]] = field(default_factory=list)
+    dependencies: List[str] = field(default_factory=list)
+    excludes: Optional[List[str]] = None
     metadata: str = ""
     interval: Optional[IntervalOffset] = None
 
-    def __post_init__(self):
-        if self.dependencies and self.excludes:
-            raise Exception("Dependencies and Excludes can't both be defined")
+    def is_hashable(self):
+        if self.dependencies is None or self.excludes is not None:
+            return False
+
+        return True
 
     def get_hash(self):
+
         hasher = Hasher()
         hasher.add_file(self.dockerfile)
         for arg, value in self.build_args.items():
@@ -46,8 +50,12 @@ class BuildConfig:
             hasher.add_str(parent.name)
         for dependency in self.dependencies:
             hasher.add_file(dependency)
-        for exclude in self.excludes:
-            hasher.add_str(exclude)
+        if self.excludes:
+            for exclude in self.excludes:
+                hasher.add_str(exclude)
+        else:
+            hasher.add_str("!NoExcludes")
+
         hasher.add_str(self.metadata)
         if self.interval:
             hasher.add_str(str(self.interval.get_intervals()))
@@ -60,10 +68,14 @@ class BuildConfig:
         Create a dockerignore file that either ignores everything but the given dependencies
         or ignores the given exclude paths.
         """
+        if excludes is None:
+            excludes = ["**"] if dependencies else []
+
         lines = excludes
         if dependencies:
-            lines = ["**"] + [f"!{path}" for path in dependencies]
+            lines += [f"!{path}" for path in dependencies]
 
+        print(lines)
         with open(".dockerignore", "w") as ignore_file:
             ignore_file.write("\n".join(lines))
 
@@ -82,4 +94,4 @@ class BuildConfig:
         for arg, value in self.build_args.items():
             args.extend(["--build-arg", f"{arg}={value}"])
 
-        run(args, check=True)
+        subprocess.run(args, check=True)

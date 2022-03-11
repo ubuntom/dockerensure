@@ -2,7 +2,6 @@ import enum
 import subprocess
 from dataclasses import dataclass
 from functools import cached_property
-from subprocess import run
 from typing import Optional
 
 from .buildconfig import BuildConfig
@@ -27,7 +26,7 @@ class DockerImage:
     Params:
     base_name: The name of the image
     build_config:  Config to describe how to build the image
-    no_hash: If true the build config hash will not be appended to the name
+    with_hash: If true the build config state hash will be appended to the name
 
     version: Optional version string to add to the tag
 
@@ -38,8 +37,8 @@ class DockerImage:
     """
 
     base_name: str
-    build_config: BuildConfig
-    no_hash: bool = False
+    build_config: BuildConfig = None
+    with_hash: bool = False
 
     version: Optional[str] = None
 
@@ -47,11 +46,30 @@ class DockerImage:
     prepend_server: bool = True
     remote_policy: RemotePolicy = RemotePolicy.ALL
 
+    class BuildFailedException(Exception):
+        pass
+
+    def __post_init__(self):
+        if self.with_hash:
+            if self.build_config is None:
+                raise Exception(
+                    f"The image {self.base_name} is configured to have a state hash appended to its tag, but the build config is None. "
+                    "Please disable appending the hash on the tag (with_hash = False) or add a build config."
+                )
+
+            if not self.build_config.is_hashable():
+                raise Exception(
+                    f"The image {self.base_name} is configured to have a state hash appended to its tag, but the config is unhashable. "
+                    "Please disable appending the hash on the tag (with_hash = False) or change the build config to make it hashable."
+                )
+
     def has_local_image(self):
         """
         Check if the image exists locally
         """
-        p = run(["docker", "image", "inspect", self.name], stdout=subprocess.DEVNULL)
+        p = subprocess.run(
+            ["docker", "image", "inspect", self.name], stdout=subprocess.DEVNULL
+        )
         return p.returncode == 0
 
     @cached_property
@@ -65,7 +83,11 @@ class DockerImage:
         if self.version:
             tag_parts.append(self.version)
 
-        tag_parts.append(self.build_config.get_hash())
+        if self.with_hash:
+            tag_parts.append(self.build_config.get_hash())
+
+        if not tag_parts:
+            return self.base_name
 
         return self.base_name + ":" + "-".join(tag_parts)
 
@@ -92,6 +114,11 @@ class DockerImage:
             if self.index.try_pull_image(self.name, self.prepend_server):
                 print("<<< Pulled image from server <<<")
                 return
+
+        if self.build_config is None:
+            raise DockerImage.BuildFailedException(
+                f"Image {self.name} has no build config and doesn't already exist, so it can't be ensured."
+            )
 
         self.build_config.build_image(self.name)
 
