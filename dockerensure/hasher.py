@@ -10,7 +10,7 @@ class Hasher:
         self.hash = hashlib.sha256()
 
     def add_file(self, path):
-        self.add_str(path)
+        self.add_str(str(path))
         with open(path, "rb") as f:
             self.hash.update(f.read())
 

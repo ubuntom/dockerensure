@@ -6,20 +6,23 @@ from .image import DockerImage
 
 
 @dataclass
-class DockerIndex:
+class DockerRegistry:
     """
     Provides functions to interact with a remote Docker server: logging in, pushing and pulling images.
     """
 
-    server: Optional[str]
-    username: str
-    password: str
+    server: Optional[str]  # Set to None for the default Docker registry
+    username: Optional[str] = None
+    password: Optional[str] = None
 
     def __post_init__(self):
         self.loggedin = False
 
     def login(self):
         if self.loggedin:
+            return
+
+        if not self.username:
             return
 
         self.loggedin = True

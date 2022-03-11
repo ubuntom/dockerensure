@@ -3,20 +3,21 @@ from unittest.mock import Mock, mock_open, patch
 import pytest
 
 from dockerensure.buildconfig import BuildConfig
-
+from dockerensure.filepolicy import FilePolicy
 
 @pytest.mark.parametrize(
-    "dependencies,excludes,output",
+    "policy,output",
     [
-        (["includeme"], ["excludeme"], "excludeme\n!includeme"),
-        (["includeme", "andme"], None, "**\n!includeme\n!andme"),
-        (["includeme"], [], "!includeme"),
-        ([], None, ""),
+        (FilePolicy.All, ""),
+        (FilePolicy.Nothing, "**"),
+        (FilePolicy.AllBut(["this"]), "this"),
+        (FilePolicy.Only(["this"]), "**\n!this"),
     ],
 )
-def test_ignore_file(dependencies, excludes, output):
+def test_ignore_file(policy, output):
     with patch("dockerensure.buildconfig.open", mock_open()) as mo:
-        BuildConfig.create_docker_ignore_file(dependencies, excludes)
+        config = BuildConfig(files=policy)
+        config.create_docker_ignore_file()
 
         mo().write.assert_called_once_with(output)
 

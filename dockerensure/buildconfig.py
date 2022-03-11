@@ -1,9 +1,16 @@
+from datetime import datetime
+from pathlib import Path
+from os import PathLike
 import subprocess
 from dataclasses import dataclass, field
-from typing import List, Optional
+from typing import List, Optional, Union
 
 from .hasher import Hasher
 from .utils import IntervalOffset
+from .filepolicy import FilePolicy
+
+
+
 
 
 @dataclass
@@ -23,38 +30,54 @@ class BuildConfig:
         If this is None and dependencies exist then all other files will be excluded.
     metadata: Additional metadata to include in the hash
     interval: An interval to refresh the hash after. For example, if you want to force a re-build every day set this interval to one day
+    directory: Directory to set the build context to. Leave as None for the current directory
     """
 
-    dockerfile: str
+    dockerfile: str = "Dockerfile"
     build_args: dict = field(default_factory=dict)
     parents: List["DockerImage"] = field(default_factory=list)
-    dependencies: List[str] = field(default_factory=list)
-    excludes: Optional[List[str]] = None
+    files: FilePolicy = FilePolicy.All
     metadata: str = ""
     interval: Optional[IntervalOffset] = None
+    directory: Union[None, str, PathLike] = None
+
+    def __post_init__(self):
+        self.directory = Path(self.directory) if self.directory else None
 
     def is_hashable(self):
-        if self.dependencies is None or self.excludes is not None:
+        if self.files == FilePolicy.All or self.files == FilePolicy.AllBut:
             return False
 
         return True
 
+    def get_relative(self, path):
+        if self.directory is None:
+            return path
+
+        return self.directory / path
+
+    def add_files_to_hash(self, hasher):
+        assert self.files != FilePolicy.All
+        assert self.files != FilePolicy.AllBut
+
+        if self.files == FilePolicy.Nothing:
+            return
+
+        if type(self.files) == FilePolicy.Only:
+            for file in self.files.exceptions:
+                hasher.add_file(self.get_relative(file))
+
     def get_hash(self):
 
         hasher = Hasher()
-        hasher.add_file(self.dockerfile)
+        hasher.add_file(self.get_relative(self.dockerfile))
         for arg, value in self.build_args.items():
             hasher.add_str(arg)
             hasher.add_str(value)
         for parent in self.parents:
             hasher.add_str(parent.name)
-        for dependency in self.dependencies:
-            hasher.add_file(dependency)
-        if self.excludes:
-            for exclude in self.excludes:
-                hasher.add_str(exclude)
-        else:
-            hasher.add_str("!NoExcludes")
+
+        self.add_files_to_hash(hasher)
 
         hasher.add_str(self.metadata)
         if self.interval:
@@ -62,21 +85,27 @@ class BuildConfig:
 
         return hasher.hexdigest()[:16]
 
-    @staticmethod
-    def create_docker_ignore_file(dependencies=None, excludes=None):
+    def create_docker_ignore_file(self):
         """
         Create a dockerignore file that either ignores everything but the given dependencies
         or ignores the given exclude paths.
         """
-        if excludes is None:
-            excludes = ["**"] if dependencies else []
-
-        lines = excludes
-        if dependencies:
-            lines += [f"!{path}" for path in dependencies]
+        
+        lines = []
+        policy_class = type(self.files)
+        if self.files == FilePolicy.Nothing:
+            lines = ["**"]
+        elif policy_class == FilePolicy.Only:
+            lines = ["**"] + [f"!{path}" for path in self.files.exceptions]
+        elif policy_class == FilePolicy.AllBut:
+            lines = self.files.exceptions
+        elif self.files == FilePolicy.All:
+            lines = []
 
         print(lines)
-        with open(".dockerignore", "w") as ignore_file:
+        print(self.files)
+
+        with open(self.get_relative(".dockerignore"), "w") as ignore_file:
             ignore_file.write("\n".join(lines))
 
     def build_image(self, name):
@@ -88,10 +117,10 @@ class BuildConfig:
         for parent in self.parents:
             parent.ensure()
 
-        self.create_docker_ignore_file(self.dependencies, self.excludes)
+        self.create_docker_ignore_file()
 
         args = ["docker", "build", "-t", name, ".", "-f", self.dockerfile]
         for arg, value in self.build_args.items():
             args.extend(["--build-arg", f"{arg}={value}"])
 
-        subprocess.run(args, check=True)
+        subprocess.run(args, check=True, cwd=self.directory)
