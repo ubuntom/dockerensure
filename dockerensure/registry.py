@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from subprocess import run
+import subprocess
 from typing import Optional
 
 from .image import DockerImage
@@ -27,10 +27,11 @@ class DockerRegistry:
 
         self.loggedin = True
 
-        args = ["docker", "login", "-u", self.username, "-p", self.password]
+        args = ["docker", "login"]
         if self.server:
             args += [self.server]
-        run(args, check=True)
+        args += ["-u", self.username, "-p", self.password]
+        subprocess.run(args, check=True)
 
     def prepend_server(self, name):
         if not self.server:
@@ -45,12 +46,12 @@ class DockerRegistry:
             remote_name = self.prepend_server(local_name)
 
         try:
-            run(["docker", "pull", remote_name], check=True)
+            subprocess.run(["docker", "pull", remote_name], check=True)
         except Exception as e:
             return False
 
         if prepend_server:
-            run(["docker", "tag", remote_name, local_name], check=True)
+            subprocess.run(["docker", "tag", remote_name, local_name], check=True)
 
         return True
 
@@ -61,12 +62,12 @@ class DockerRegistry:
         if prepend_server:
             remote_name = self.prepend_server(local_name)
 
-            run(["docker", "tag", local_name, remote_name], check=True)
+            subprocess.run(["docker", "tag", local_name, remote_name], check=True)
 
-        run(["docker", "push", remote_name], check=True)
+        subprocess.run(["docker", "push", remote_name], check=True)
 
     def image(self, *args, **kwargs):
         """
         Constructs a DockerImage that uses this index
         """
-        return DockerImage(*args, index=self, **kwargs)
+        return DockerImage(*args, registry=self, **kwargs)

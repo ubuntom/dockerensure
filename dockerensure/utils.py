@@ -10,7 +10,7 @@ class IntervalOffset:
     )
 
     def get_intervals(self):
-        now = datetime.datetime.utcnow()
+        now = datetime.datetime.now(datetime.timezone.utc)
         print(now)
         print(self.offset)
         delta = now - self.offset

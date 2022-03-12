@@ -49,16 +49,19 @@ class DockerImage:
     class BuildFailedException(Exception):
         pass
 
+    class UnhashableReferenceException(Exception):
+        pass
+
     def __post_init__(self):
         if self.with_hash:
             if self.build_config is None:
-                raise Exception(
+                raise DockerImage.UnhashableReferenceException(
                     f"The image {self.name} is configured to have a state hash appended to its tag, but the build config is None. "
                     "Please disable appending the hash on the tag (with_hash = False) or add a build config."
                 )
 
             if not self.build_config.is_hashable():
-                raise Exception(
+                raise DockerImage.UnhashableReferenceException(
                     f"The image {self.name} is configured to have a state hash appended to its tag, but the config is unhashable. "
                     "Please disable appending the hash on the tag (with_hash = False) or change the build config to make it hashable."
                 )

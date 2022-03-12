@@ -1,4 +1,3 @@
-import imp
 import os
 from unittest.mock import Mock, patch
 
@@ -30,6 +29,18 @@ class TestName:
     def test_hashed_name(self, hashable_buildconfig):
         image = DockerImage("base", with_hash=True, build_config=hashable_buildconfig)
         assert image.reference == "base:76cb7a29a968388f"
+
+    def test_hash_without_config(self):
+        with pytest.raises(DockerImage.UnhashableReferenceException):
+            DockerImage("base", with_hash=True)
+
+    def test_hash_unhashable_config(self):
+        with pytest.raises(DockerImage.UnhashableReferenceException):
+            DockerImage("base", with_hash=True, build_config=BuildConfig())
+
+    def test_prepend_server(self):
+        image = DockerImage("base", registry=DockerRegistry("docker.io"))
+        assert image.registry_reference == "docker.io/base"
 
 
 class TestLocalImage:
