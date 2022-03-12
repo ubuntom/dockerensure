@@ -5,6 +5,7 @@ import pytest
 from dockerensure.buildconfig import BuildConfig
 from dockerensure.filepolicy import FilePolicy
 
+
 @pytest.mark.parametrize(
     "policy,output",
     [

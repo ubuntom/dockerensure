@@ -26,13 +26,10 @@ class TestName:
 
     def test_versioned_name(self):
         assert DockerImage("base", version="1.1").reference == "base:1.1"
-        
+
     def test_hashed_name(self, hashable_buildconfig):
         image = DockerImage("base", with_hash=True, build_config=hashable_buildconfig)
-        assert (
-            image.reference
-            == "base:76cb7a29a968388f"
-        )
+        assert image.reference == "base:76cb7a29a968388f"
 
 
 class TestLocalImage:
@@ -76,7 +73,9 @@ class TestEnsure:
 
     def test_remote_pull_with_registry_no_pull(self):
         mock_registry = Mock(spec=DockerRegistry)
-        di = DockerImage("test", registry=mock_registry, remote_policy=RemotePolicy.PUSH_ONLY)
+        di = DockerImage(
+            "test", registry=mock_registry, remote_policy=RemotePolicy.PUSH_ONLY
+        )
         di.has_local_image = Mock(return_value=False)
 
         with pytest.raises(DockerImage.BuildFailedException):

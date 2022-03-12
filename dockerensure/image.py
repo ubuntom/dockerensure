@@ -108,7 +108,7 @@ class DockerImage:
         Ensures that the image is available on the local system.
         By the time this function returns, the image will exist. It will be downloaded or built if necessary.
         """
-        print(f">>> Ensuring image {self.name} >>>")
+        print(f">>> Ensuring image {self.ref} >>>")
 
         if self.has_local_image():
             print("<<< Image already exists locally <<<")
@@ -119,23 +119,23 @@ class DockerImage:
             RemotePolicy.PULL_ONLY,
         }:
             print("Checking for image on server...")
-            if self.registry.try_pull_image(self.name, self.prepend_server):
+            if self.registry.try_pull_image(self.ref, self.prepend_server):
                 print("<<< Pulled image from server <<<")
                 return
 
         if self.build_config is None:
             raise DockerImage.BuildFailedException(
-                f"Image {self.name} has no build config and doesn't already exist, so it can't be ensured."
+                f"Image {self.ref} has no build config and doesn't already exist, so it can't be ensured."
             )
 
-        self.build_config.build_image(self.name)
+        self.build_config.build_image(self.ref)
 
         if self.registry and self.remote_policy in {
             RemotePolicy.ALL,
             RemotePolicy.PUSH_ONLY,
         }:
             print("Pushing image")
-            self.registry.push_image(self.name, self.prepend_server)
+            self.registry.push_image(self.ref, self.prepend_server)
 
         print("<<< Built image <<<")
 

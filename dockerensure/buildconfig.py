@@ -10,9 +10,6 @@ from .utils import IntervalOffset
 from .filepolicy import FilePolicy
 
 
-
-
-
 @dataclass
 class BuildConfig:
     """
@@ -90,7 +87,7 @@ class BuildConfig:
         Create a dockerignore file that either ignores everything but the given dependencies
         or ignores the given exclude paths.
         """
-        
+
         lines = []
         policy_class = type(self.files)
         if self.files == FilePolicy.Nothing:
