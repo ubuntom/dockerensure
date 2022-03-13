@@ -1,3 +1,4 @@
+from datetime import timedelta
 from unittest.mock import Mock, mock_open, patch
 
 import pytest
@@ -5,7 +6,6 @@ import pytest
 from dockerensure.buildconfig import BuildConfig, IntervalOffset
 from dockerensure.filepolicy import FilePolicy
 
-from datetime import timedelta
 
 @pytest.mark.parametrize(
     "policy,output",
@@ -45,9 +45,13 @@ def test_build_args(mock_run):
         == f"docker build -t {img_name} . -f {dockerfile} --build-arg PROD=true"
     )
 
+
 def test_unhashable():
     assert BuildConfig(files=FilePolicy.All).is_hashable() is False
 
+
 @patch("dockerensure.buildconfig.Hasher.add_file", Mock())
 def test_interval_hash():
-    BuildConfig(files=FilePolicy.Nothing, interval=IntervalOffset(timedelta(days=1))).get_hash()
+    BuildConfig(
+        files=FilePolicy.Nothing, interval=IntervalOffset(timedelta(days=1))
+    ).get_hash()

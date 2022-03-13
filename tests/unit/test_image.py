@@ -3,9 +3,9 @@ from unittest.mock import Mock, patch
 
 import pytest
 
+from dockerensure.buildconfig import BuildConfig, FilePolicy
 from dockerensure.image import DockerImage, RemotePolicy
 from dockerensure.registry import DockerRegistry
-from dockerensure.buildconfig import BuildConfig, FilePolicy
 
 
 @pytest.fixture

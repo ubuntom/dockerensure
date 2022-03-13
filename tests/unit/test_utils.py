@@ -9,9 +9,21 @@ from dockerensure.utils import IntervalOffset
 @pytest.mark.parametrize(
     "interval,offset,intervals",
     [
-        (timedelta(days=1), datetime(year=2020, month=1, day=10, hour=0, tzinfo=timezone.utc), 0),
-        (timedelta(days=1), datetime(year=2020, month=1, day=9, hour=0, tzinfo=timezone.utc), 1),
-        (timedelta(hours=5), datetime(year=2020, month=1, day=9, hour=12, tzinfo=timezone.utc), 4),
+        (
+            timedelta(days=1),
+            datetime(year=2020, month=1, day=10, hour=0, tzinfo=timezone.utc),
+            0,
+        ),
+        (
+            timedelta(days=1),
+            datetime(year=2020, month=1, day=9, hour=0, tzinfo=timezone.utc),
+            1,
+        ),
+        (
+            timedelta(hours=5),
+            datetime(year=2020, month=1, day=9, hour=12, tzinfo=timezone.utc),
+            4,
+        ),
     ],
 )
 @patch("datetime.datetime")

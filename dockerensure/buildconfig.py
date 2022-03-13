@@ -1,13 +1,13 @@
-from datetime import datetime
-from pathlib import Path
-from os import PathLike
 import subprocess
 from dataclasses import dataclass, field
+from datetime import datetime
+from os import PathLike
+from pathlib import Path
 from typing import List, Optional, Union
 
+from .filepolicy import FilePolicy
 from .hasher import Hasher
 from .utils import IntervalOffset
-from .filepolicy import FilePolicy
 
 
 @dataclass
