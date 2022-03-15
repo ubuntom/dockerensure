@@ -27,6 +27,7 @@ class DockerImage:
     name: The name of the image
     build_config:  Config to describe how to build the image
     with_hash: If true the build config state hash will be appended to the name
+    force_build: Force building of the image even if it already exists
 
     version: Optional version string to add to the tag
 
@@ -39,6 +40,7 @@ class DockerImage:
     name: str
     build_config: BuildConfig = None
     with_hash: bool = False
+    force_build: bool = False
 
     version: Optional[str] = None
 
@@ -106,16 +108,10 @@ class DockerImage:
 
         return self.registry.prepend_server(self.reference)
 
-    def ensure(self):
-        """
-        Ensures that the image is available on the local system.
-        By the time this function returns, the image will exist. It will be downloaded or built if necessary.
-        """
-        print(f">>> Ensuring image {self.ref} >>>")
-
+    def check_existence(self):
         if self.has_local_image():
             print("<<< Image already exists locally <<<")
-            return
+            return True
 
         if self.registry and self.remote_policy in {
             RemotePolicy.ALL,
@@ -124,13 +120,26 @@ class DockerImage:
             print("Checking for image on server...")
             if self.registry.try_pull_image(self.ref, self.prepend_server):
                 print("<<< Pulled image from server <<<")
-                return
+                return True
+
+        return False
+
+    def ensure(self):
+        """
+        Ensures that the image is available on the local system.
+        By the time this function returns, the image will exist. It will be downloaded or built if necessary.
+        """
+        print(f">>> Ensuring image {self.ref} >>>")
+
+        if not self.force_build and self.check_existence():
+            return
 
         if self.build_config is None:
             raise DockerImage.BuildFailedException(
-                f"Image {self.ref} has no build config and doesn't already exist, so it can't be ensured."
+                f"Image {self.ref} needs to be built but it has no build config, so it can't be ensured."
             )
 
+        print(f"Building {self.ref}")
         self.build_config.build_image(self.ref)
 
         if self.registry and self.remote_policy in {

@@ -119,3 +119,10 @@ class TestEnsure:
         out = capsys.readouterr().out
         assert "Pushing image" in out
         assert "Built image" in out
+
+    def test_force_build(self):
+        di = DockerImage("test", force_build=True)
+        di.has_local_image = Mock(return_value=True)
+
+        with pytest.raises(DockerImage.BuildFailedException):
+            di.ensure()
