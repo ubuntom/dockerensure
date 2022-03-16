@@ -105,9 +105,6 @@ class BuildConfig:
         elif self.files == FilePolicy.All:
             lines = []
 
-        print(lines)
-        print(self.files)
-
         with open(self.get_relative(".dockerignore"), "w") as ignore_file:
             ignore_file.write("\n".join(lines))
 
