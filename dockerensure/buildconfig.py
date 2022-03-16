@@ -22,13 +22,11 @@ class BuildConfig:
     dockerfile: The dockerfile to build with
     build_args: Docker build_args
     parents: List of images that this image depends on
-    dependencies: List of files used by this build.
-    excludes: List of files to exclude from this build.
-        If this is None and dependencies exist then all other files will be excluded.
+    files: A FilePolicy object describing what files are to be made available to the build
     metadata: Additional metadata to include in the hash
     interval: An interval to refresh the hash after. For example, if you want to force a re-build every day set this interval to one day
     directory: Directory to set the build context to. Leave as None for the current directory
-    build_args: Docker build_args that won't be included in the hash. These could include credentials and other data that is required by the build
+    unhashed_build_args: Docker build_args that won't be included in the hash. These could include credentials and other data that is required by the build
         but won't affect the built image.
     """
 
