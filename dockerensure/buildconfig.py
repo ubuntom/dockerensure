@@ -28,6 +28,8 @@ class BuildConfig:
     metadata: Additional metadata to include in the hash
     interval: An interval to refresh the hash after. For example, if you want to force a re-build every day set this interval to one day
     directory: Directory to set the build context to. Leave as None for the current directory
+    build_args: Docker build_args that won't be included in the hash. These could include credentials and other data that is required by the build
+        but won't affect the built image.
     """
 
     dockerfile: str = "Dockerfile"
@@ -37,6 +39,7 @@ class BuildConfig:
     metadata: str = ""
     interval: Optional[IntervalOffset] = None
     directory: Union[None, str, PathLike] = None
+    unhashed_build_args: dict = field(default_factory=dict)
 
     def __post_init__(self):
         self.directory = Path(self.directory) if self.directory else None
@@ -54,6 +57,8 @@ class BuildConfig:
         return self.directory / path
 
     def add_files_to_hash(self, hasher):
+        """Adds the files specified by the file policy to the state hash"""
+
         assert self.files != FilePolicy.All
         assert self.files != FilePolicy.AllBut
 
@@ -65,6 +70,7 @@ class BuildConfig:
                 hasher.add_file(self.get_relative(file))
 
     def get_hash(self):
+        """Returns a hash of all build state"""
 
         hasher = Hasher()
         hasher.add_file(self.get_relative(self.dockerfile))
@@ -117,7 +123,7 @@ class BuildConfig:
         self.create_docker_ignore_file()
 
         args = ["docker", "build", "-t", name, ".", "-f", self.dockerfile]
-        for arg, value in self.build_args.items():
+        for arg, value in {**self.unhashed_build_args, **self.build_args}.items():
             args.extend(["--build-arg", f"{arg}={value}"])
 
         subprocess.run(args, check=True, cwd=self.directory)

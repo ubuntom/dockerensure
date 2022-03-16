@@ -55,3 +55,22 @@ def test_interval_hash():
     BuildConfig(
         files=FilePolicy.Nothing, interval=IntervalOffset(timedelta(days=1))
     ).get_hash()
+
+@patch("dockerensure.buildconfig.Hasher.add_file", Mock())
+def test_unhashed_args_state():
+    """Test that unhashed build args don't contribute to the hash"""
+    no_args = BuildConfig(files=FilePolicy.Nothing).get_hash()
+    one_arg = BuildConfig(files=FilePolicy.Nothing, unhashed_build_args={"Test": "Hi"}).get_hash()
+    two_args = BuildConfig(files=FilePolicy.Nothing, unhashed_build_args={"A":"B","X":"Y"}).get_hash()
+    hash_arg = BuildConfig(files=FilePolicy.Nothing, build_args={"A":"B","X":"Y"}).get_hash()
+
+    assert no_args == one_arg
+    assert one_arg == two_args
+    assert hash_arg != no_args
+
+@patch("subprocess.run")
+def test_unhashed_args_used(mock_run):
+    """Test that unhashed build args are passed to the build"""
+    BuildConfig(files=FilePolicy.Nothing, unhashed_build_args={"Test": "Hi"}).build_image("test")
+
+    assert "Test=Hi" in mock_run.call_args.args[0]
