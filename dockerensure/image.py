@@ -17,6 +17,7 @@ class RemotePolicy(enum.Enum):
     )  # The server will be queried before building and the built image will be pushed
     PULL_ONLY = enum.auto()  # The build image will not be pushed
     PUSH_ONLY = enum.auto()  # The server will not be queried for the image
+    NONE = enum.auto()  # The server will not be used for anything
 
 
 @dataclass
