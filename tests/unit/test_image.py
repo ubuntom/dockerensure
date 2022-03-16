@@ -43,7 +43,9 @@ class TestName:
         assert image.registry_reference == "docker.io/base"
 
     def test_hashed_name_len(self, hashable_buildconfig):
-        image = DockerImage("base", with_hash=True, hash_len=32, build_config=hashable_buildconfig)
+        image = DockerImage(
+            "base", with_hash=True, hash_len=32, build_config=hashable_buildconfig
+        )
         assert image.reference == "base:76cb7a29a968388fb16ca0f612d3ca1f"
 
 

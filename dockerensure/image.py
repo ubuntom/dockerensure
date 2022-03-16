@@ -92,7 +92,7 @@ class DockerImage:
             tag_parts.append(self.version)
 
         if self.with_hash:
-            tag_parts.append(self.build_config.get_hash()[:self.hash_len])
+            tag_parts.append(self.build_config.get_hash()[: self.hash_len])
 
         if not tag_parts:
             return self.name
