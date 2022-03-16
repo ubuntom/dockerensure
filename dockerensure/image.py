@@ -26,10 +26,11 @@ class DockerImage:
     Params:
     name: The name of the image
     build_config:  Config to describe how to build the image
-    with_hash: If true the build config state hash will be appended to the name
+    with_hash: If true the build config state hash will be appended to the tag
     force_build: Force building of the image even if it already exists
 
     version: Optional version string to add to the tag
+    hash_len: Length of the hash to append if ` with_hash` is True. Default is 16
 
     registry:  DockerRegistry object for builds using a remote server
     prepend_server: If true, the server url will be prepended to the image name before pushing. Set this to false
@@ -43,6 +44,7 @@ class DockerImage:
     force_build: bool = False
 
     version: Optional[str] = None
+    hash_len: int = 16
 
     registry: Optional["DockerRegistry"] = None
     prepend_server: bool = True
@@ -89,7 +91,7 @@ class DockerImage:
             tag_parts.append(self.version)
 
         if self.with_hash:
-            tag_parts.append(self.build_config.get_hash())
+            tag_parts.append(self.build_config.get_hash()[:self.hash_len])
 
         if not tag_parts:
             return self.name

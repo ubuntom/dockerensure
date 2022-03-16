@@ -86,7 +86,7 @@ class BuildConfig:
         if self.interval:
             hasher.add_str(str(self.interval.get_intervals()))
 
-        return hasher.hexdigest()[:16]
+        return hasher.hexdigest()
 
     def create_docker_ignore_file(self):
         """
